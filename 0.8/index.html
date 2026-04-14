@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="robots" content="noindex">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rage's Extensions (0.8)</title>
+  <title>0xRage Extensions (0.8)</title>
   <style>
     :root {
       color-scheme: dark;
@@ -203,7 +203,8 @@
 <body>
   <main>
     <div class="hero">
-      <h1>Rage's Extensions (0.8)</h1>
+      <h1>0xRage Extensions (0.8)</h1>
+      <p>One Paperback 0.8 repo URL with three custom sources inside it.</p>
     </div>
 
     <div class="stack">
@@ -242,11 +243,36 @@
               <span class="chip">Mature</span>
             </div>
           </div>
+
+          <div class="source-card">
+            <div class="source-head">
+              <img src="GenzUpdates/includes/icon.webp" alt="Genz Updates icon">
+              <div>
+                <div class="source-name">Genz Updates</div>
+                <p>Search, series details, chapters, and reader pages for genzupdates.com.</p>
+              </div>
+            </div>
+            <div class="chips">
+              <span class="chip">English</span>
+              <span class="chip">Mature</span>
+            </div>
+          </div>
         </div>
       </div>
 
+      <div class="panel">
+        <div class="label">How To Host</div>
+        <ul>
+          <li>Upload the contents of this folder to the root of one public GitHub repo.</li>
+          <li>Enable GitHub Pages on that repo using `main` and `/(root)`.</li>
+          <li>Add the one published repo URL to Paperback.</li>
+        </ul>
+      </div>
+    </div>
+
     <div class="button-row">
       <a class="button primary" id="add-link" href="#">Add to Paperback</a>
+      <a class="button secondary" href="versioning.json">Open versioning.json</a>
     </div>
   </main>
 
@@ -256,7 +282,7 @@
       document.getElementById("repo-url").textContent = repoUrl;
       document.getElementById("add-link").href =
         "paperback://addRepo?displayName=" +
-        encodeURIComponent("Rage's Extensions (0.8)") +
+        encodeURIComponent("0xRage Extensions (0.8)") +
         "&url=" +
         encodeURIComponent(repoUrl);
     })();
