@@ -1,5 +1,5 @@
 {
-  "buildTime": "2026-04-14T03:35:00.000Z",
+  "buildTime": "2026-04-14T09:05:00.000Z",
   "sources": [
     {
       "id": "HiveToons",
@@ -53,6 +53,24 @@
         }
       ],
       "websiteBaseURL": "https://genzupdates.com",
+      "intents": 5
+    },
+    {
+      "id": "Atsumaru",
+      "name": "Atsumaru",
+      "author": "0xRage",
+      "desc": "Extension that pulls manga from atsu.moe",
+      "website": "https://github.com/openai",
+      "contentRating": "MATURE",
+      "version": "1.0.0",
+      "icon": "icon.png",
+      "tags": [
+        {
+          "text": "English",
+          "type": "info"
+        }
+      ],
+      "websiteBaseURL": "https://atsu.moe",
       "intents": 5
     }
   ],
