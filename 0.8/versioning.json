@@ -1,5 +1,5 @@
 {
-  "buildTime": "2026-04-13T19:45:00.000Z",
+  "buildTime": "2026-04-13T21:00:00.000Z",
   "sources": [
     {
       "id": "HiveToons",
@@ -17,6 +17,24 @@
         }
       ],
       "websiteBaseURL": "https://hivetoons.org",
+      "intents": 5
+    },
+    {
+      "id": "VortexScans",
+      "name": "Vortex Scans",
+      "author": "Codex",
+      "desc": "Extension that pulls manga from vortexscans.org",
+      "website": "https://github.com/openai",
+      "contentRating": "MATURE",
+      "version": "1.0.0",
+      "icon": "icon.webp",
+      "tags": [
+        {
+          "text": "English",
+          "type": "info"
+        }
+      ],
+      "websiteBaseURL": "https://vortexscans.org",
       "intents": 5
     }
   ],
