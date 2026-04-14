@@ -3,7 +3,7 @@ var _Sources = (() => {
   var LANG = "\u{1F1EC}\u{1F1E7}";
   var HOME_SECTION_TYPE = "singleRowNormal";
   var AtsumaruInfo = {
-    version: "1.0.0",
+    version: "1.0.1",
     name: "Atsumaru",
     icon: "icon.png",
     author: "0xRage",
@@ -38,6 +38,31 @@ var _Sources = (() => {
     }
 
     return ATSU_BASE + cleaned;
+  }
+
+  function normalizeStaticAssetUrl(url) {
+    if (!url) {
+      return "";
+    }
+
+    var cleaned = String(url).trim();
+    if (!cleaned) {
+      return "";
+    }
+
+    if (/^https?:\/\//i.test(cleaned) || cleaned.indexOf("//") === 0) {
+      return normalizeUrl(cleaned);
+    }
+
+    if (cleaned.indexOf("/static/") === 0) {
+      return normalizeUrl(cleaned);
+    }
+
+    if (cleaned.indexOf("static/") === 0) {
+      return normalizeUrl("/" + cleaned);
+    }
+
+    return normalizeUrl("/static/" + cleaned.replace(/^\/+/, ""));
   }
 
   function buildQueryString(params) {
@@ -187,10 +212,10 @@ var _Sources = (() => {
     }
 
     if (typeof item === "string") {
-      return normalizeUrl(item);
+      return normalizeStaticAssetUrl(item);
     }
 
-    return normalizeUrl(item.largeImage || item.mediumImage || item.smallImage || item.image);
+    return normalizeStaticAssetUrl(item.largeImage || item.mediumImage || item.smallImage || item.image);
   }
 
   function buildSubtitle(item) {
