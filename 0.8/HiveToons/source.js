@@ -27,7 +27,7 @@ var _Sources = (() => {
     version: "1.0.1",
     name: "HiveToons",
     icon: "icon.webp",
-    author: "Codex",
+    author: "0xRage",
     authorWebsite: "https://github.com/openai",
     description: "Extension that pulls manga from hivetoons.org",
     contentRating: "MATURE",
