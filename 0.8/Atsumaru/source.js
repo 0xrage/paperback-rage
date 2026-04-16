@@ -3,7 +3,7 @@ var _Sources = (() => {
   var LANG = "\u{1F1EC}\u{1F1E7}";
   var HOME_SECTION_TYPE = "singleRowNormal";
   var AtsumaruInfo = {
-    version: "1.0.1",
+    version: "1.0.2",
     name: "Atsumaru",
     icon: "icon.png",
     author: "0xRage",
@@ -12,7 +12,7 @@ var _Sources = (() => {
     contentRating: "MATURE",
     websiteBaseURL: ATSU_BASE,
     sourceTags: [],
-    intents: 5
+    intents: 53
   };
 
   function normalizeUrl(url) {
@@ -429,7 +429,7 @@ var _Sources = (() => {
     }
 
     if (response.status === 403 || response.status === 429 || response.status === 503) {
-      throw new Error("Atsumaru blocked the request. Try again later.");
+      throw new Error("Cloudflare Bypass Required");
     }
 
     throw new Error("Atsumaru returned " + response.status + " for " + response.request.url);
@@ -471,6 +471,18 @@ var _Sources = (() => {
 
     getMangaShareUrl(mangaId) {
       return ATSU_BASE + "/manga/" + mangaId;
+    }
+
+    getCloudflareBypassRequest() {
+      return App.createRequest({
+        url: ATSU_BASE + "/",
+        method: "GET",
+        headers: {
+          referer: ATSU_BASE + "/",
+          accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+        }
+      });
     }
 
     async getMangaDetails(mangaId) {
