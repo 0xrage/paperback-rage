@@ -3,7 +3,7 @@ var _Sources = (() => {
   var LANG = "\u{1F1EC}\u{1F1E7}";
   var HOME_SECTION_TYPE = "singleRowNormal";
   var AtsumaruInfo = {
-    version: "1.0.2",
+    version: "1.0.3",
     name: "Atsumaru",
     icon: "icon.png",
     author: "0xRage",
@@ -473,14 +473,15 @@ var _Sources = (() => {
       return ATSU_BASE + "/manga/" + mangaId;
     }
 
-    getCloudflareBypassRequest() {
+    async getCloudflareBypassRequestAsync() {
       return App.createRequest({
         url: ATSU_BASE + "/",
         method: "GET",
         headers: {
           referer: ATSU_BASE + "/",
+          origin: ATSU_BASE + "/",
           accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+          "user-agent": await this.requestManager.getDefaultUserAgent()
         }
       });
     }
