@@ -1,5 +1,5 @@
 {
-  "buildTime": "2026-04-18T18:30:00.000Z",
+  "buildTime": "2026-05-04T23:10:00.000Z",
   "sources": [
     {
       "id": "HiveToons",
@@ -8,7 +8,7 @@
       "desc": "Extension that pulls manga from hivetoons.org",
       "website": "https://github.com/openai",
       "contentRating": "MATURE",
-      "version": "1.0.3",
+      "version": "1.0.5",
       "icon": "icon.webp",
       "tags": [
         {
