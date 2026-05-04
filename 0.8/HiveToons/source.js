@@ -24,7 +24,7 @@ var _Sources = (() => {
     }
   ];
   var HiveToonsInfo = {
-    version: "1.0.3",
+    version: "1.0.5",
     name: "HiveToons",
     icon: "icon.webp",
     author: "0xRage",
@@ -93,6 +93,21 @@ var _Sources = (() => {
       .trim();
   }
 
+  function decodeHtmlEntities(text) {
+    if (!text) {
+      return "";
+    }
+
+    return String(text)
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&quot;/gi, "\"")
+      .replace(/&#39;/gi, "'")
+      .replace(/&apos;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&amp;/gi, "&");
+  }
+
   function normalizeStatus(status) {
     switch (String(status || "").toUpperCase()) {
       case "ONGOING":
@@ -113,15 +128,16 @@ var _Sources = (() => {
       return "";
     }
 
-    return String(text)
-      .replace(/\r/g, "")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/p>/gi, "\n\n")
-      .replace(/<[^>]+>/g, "")
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
-      .replace(/[ \t]+\n/g, "\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
+    return decodeHtmlEntities(
+      String(text)
+        .replace(/\r/g, "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+    ).trim();
   }
 
   function toNumber(value) {
@@ -254,6 +270,109 @@ var _Sources = (() => {
     });
   }
 
+  function uniqueList(values) {
+    var seen = {};
+    var output = [];
+
+    for (var index = 0; index < values.length; index += 1) {
+      var value = values[index];
+      if (!value || seen[value]) {
+        continue;
+      }
+
+      seen[value] = true;
+      output.push(value);
+    }
+
+    return output;
+  }
+
+  function extractEncodedStringValue(encodedHtml, key) {
+    if (!encodedHtml) {
+      return "";
+    }
+
+    var token = "&quot;" + key + "&quot;:[0,&quot;";
+    var startIndex = encodedHtml.indexOf(token);
+    if (startIndex === -1) {
+      return "";
+    }
+
+    startIndex += token.length;
+    var endIndex = encodedHtml.indexOf("&quot;]", startIndex);
+    if (endIndex === -1) {
+      return "";
+    }
+
+    return decodeHtmlEntities(encodedHtml.substring(startIndex, endIndex));
+  }
+
+  function extractEncodedNumberValue(encodedHtml, key) {
+    if (!encodedHtml) {
+      return 0;
+    }
+
+    var token = "&quot;" + key + "&quot;:[0,";
+    var startIndex = encodedHtml.indexOf(token);
+    if (startIndex === -1) {
+      return 0;
+    }
+
+    startIndex += token.length;
+    var endIndex = encodedHtml.indexOf("]", startIndex);
+    if (endIndex === -1) {
+      return 0;
+    }
+
+    return toNumber(encodedHtml.substring(startIndex, endIndex));
+  }
+
+  function extractFragment(html, startToken, endToken) {
+    var startIndex = html.indexOf(startToken);
+    if (startIndex === -1) {
+      return "";
+    }
+
+    startIndex += startToken.length;
+    var endIndex = html.indexOf(endToken, startIndex);
+    if (endIndex === -1) {
+      return "";
+    }
+
+    return html.substring(startIndex, endIndex);
+  }
+
+  function extractSeriesChaptersFromHtml(html) {
+    var chapters = [];
+    var seen = {};
+    var pattern = /&quot;id&quot;:\[0,(-?\d+)\],&quot;number&quot;:\[0,(-?\d+(?:\.\d+)?)\],&quot;slug&quot;:\[0,&quot;([^"]+?)&quot;\],&quot;title&quot;:\[0,&quot;([\s\S]*?)&quot;\],&quot;createdAt&quot;:\[0,&quot;([^"]+?)&quot;\][\s\S]{0,1500}?&quot;isAccessible&quot;:\[0,(true|false)\]/g;
+    var match;
+
+    while ((match = pattern.exec(html)) !== null) {
+      var slug = decodeHtmlEntities(match[3]);
+      if (!slug || seen[slug]) {
+        continue;
+      }
+
+      seen[slug] = true;
+      chapters.push({
+        id: toNumber(match[1]),
+        number: toNumber(match[2]),
+        slug: slug,
+        title: cleanDescription(match[4]),
+        createdAt: match[5],
+        isAccessible: match[6] === "true"
+      });
+    }
+
+    return chapters;
+  }
+
+  function extractChapterPagesFromHtml(html) {
+    var matches = html.match(/https:\/\/storage\.hivetoon\.com\/public\/upload\/series\/[^"'\\s<>]+\.(?:jpg|jpeg|png|webp|gif|avif)/ig) || [];
+    return uniqueList(matches);
+  }
+
   function extractEscapedJsonValue(html, marker) {
     var start = html.indexOf(marker);
     if (start === -1) {
@@ -310,10 +429,50 @@ var _Sources = (() => {
   }
 
   function extractSeriesPayload(html) {
+    if (html.indexOf("&quot;post&quot;:[0,{") !== -1) {
+      var postFragment = extractFragment(html, "&quot;post&quot;:[0,{", ",&quot;publishingTeam&quot;:");
+      if (!postFragment) {
+        throw new Error("Unable to locate HiveToons series payload fragment.");
+      }
+
+      var chapters = extractSeriesChaptersFromHtml(html);
+      return {
+        id: extractEncodedNumberValue(postFragment, "id"),
+        slug: extractEncodedStringValue(postFragment, "slug"),
+        postTitle: extractEncodedStringValue(postFragment, "postTitle"),
+        postContent: extractEncodedStringValue(postFragment, "postContent"),
+        featuredImage: extractEncodedStringValue(postFragment, "featuredImage"),
+        averageRating: extractEncodedNumberValue(html, "averageRating"),
+        author: extractEncodedStringValue(postFragment, "author"),
+        artist: extractEncodedStringValue(postFragment, "artist"),
+        seriesType: extractEncodedStringValue(postFragment, "seriesType"),
+        seriesStatus: extractEncodedStringValue(postFragment, "seriesStatus"),
+        genres: [],
+        chapters: chapters
+      };
+    }
+
     return extractEscapedJsonValue(html, "\\\"post\\\":");
   }
 
   function extractChapterPayload(html) {
+    if (html.indexOf("&quot;chapter&quot;:[0,{") !== -1) {
+      var chapterFragment = extractFragment(html, "&quot;chapter&quot;:[0,{", ",&quot;chapterLabel&quot;:");
+      var pages = extractChapterPagesFromHtml(html);
+      return {
+        id: extractEncodedNumberValue(chapterFragment, "id"),
+        slug: extractEncodedStringValue(chapterFragment, "slug"),
+        number: extractEncodedNumberValue(chapterFragment, "number"),
+        isAccessible: pages.length > 0,
+        images: pages.map(function(url, index) {
+          return {
+            order: index,
+            url: url
+          };
+        })
+      };
+    }
+
     return extractEscapedJsonValue(html, "\\\"chapter\\\":");
   }
 
@@ -543,13 +702,63 @@ var _Sources = (() => {
     }
 
     async fetchSeries(mangaId) {
+      try {
+        var apiResponse = await this.scheduleRequest(
+          HIVE_API +
+            "/api/post?" +
+            buildQueryString({
+              postSlug: mangaId,
+              includeChapters: 1
+            })
+        );
+        var apiPayload = typeof apiResponse.data === "string" ? JSON.parse(apiResponse.data) : apiResponse.data;
+
+        if (apiPayload && apiPayload.post && apiPayload.post.slug) {
+          if ((!Array.isArray(apiPayload.post.chapters) || !apiPayload.post.chapters.length) && apiPayload.post.id) {
+            var chaptersPayload = await this.fetchChaptersByPostId(apiPayload.post.id);
+            apiPayload.post.chapters = chaptersPayload.chapters;
+          }
+
+          return apiPayload.post;
+        }
+      } catch (error) {}
+
       var response = await this.scheduleRequest(HIVE_BASE + "/series/" + mangaId);
       return extractSeriesPayload(response.data);
     }
 
     async fetchChapter(mangaId, chapterId) {
+      try {
+        var apiResponse = await this.scheduleRequest(
+          HIVE_API +
+            "/api/chapter?" +
+            buildQueryString({
+              mangaslug: mangaId,
+              chapterslug: chapterId
+            })
+        );
+        var apiPayload = typeof apiResponse.data === "string" ? JSON.parse(apiResponse.data) : apiResponse.data;
+        if (apiPayload && apiPayload.chapter && apiPayload.chapter.slug) {
+          return apiPayload.chapter;
+        }
+      } catch (error) {}
+
       var response = await this.scheduleRequest(HIVE_BASE + "/series/" + mangaId + "/" + chapterId);
       return extractChapterPayload(response.data);
+    }
+
+    async fetchChaptersByPostId(postId) {
+      var response = await this.scheduleRequest(
+        HIVE_API +
+          "/api/chapters?" +
+          buildQueryString({
+            postId: postId
+          })
+      );
+      var payload = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+      return {
+        chapters: payload && payload.post && Array.isArray(payload.post.chapters) ? payload.post.chapters : []
+      };
     }
 
     async scheduleRequest(url) {
