@@ -24,7 +24,7 @@ var _Sources = (() => {
     }
   ];
   var VortexScansInfo = {
-    version: "1.0.3",
+    version: "1.0.4",
     name: "Vortex Scans",
     icon: "icon.webp",
     author: "0xRage",
@@ -584,6 +584,39 @@ var _Sources = (() => {
     }
 
     async getChapterDetails(mangaId, chapterId) {
+      try {
+        var apiResponse = await this.scheduleRequest(
+          VORTEX_API +
+            "/api/chapter?" +
+            buildQueryString({
+              mangaslug: mangaId,
+              chapterslug: chapterId
+            })
+        );
+        var apiPayload = parseJsonData(apiResponse.data);
+        var apiChapter = apiPayload && apiPayload.chapter;
+        if (apiChapter && apiChapter.slug) {
+          var apiImages = Array.isArray(apiChapter.images) ? apiChapter.images.slice() : [];
+          apiImages.sort(function(left, right) {
+            return toNumber(left && left.order) - toNumber(right && right.order);
+          });
+
+          var apiPages = apiImages
+            .map(function(image) {
+              return normalizeUrl(image && image.url, "https://storage.vortexscans.org");
+            })
+            .filter(Boolean);
+
+          if (apiPages.length) {
+            return App.createChapterDetails({
+              id: chapterId,
+              mangaId: mangaId,
+              pages: apiPages
+            });
+          }
+        }
+      } catch (error) {}
+
       var response = await this.scheduleRequest(VORTEX_BASE + "/series/" + mangaId + "/" + chapterId);
       var pages = extractChapterPages(String(response.data || ""));
 
@@ -689,6 +722,33 @@ var _Sources = (() => {
         return this.seriesCache[mangaId];
       }
 
+      try {
+        var apiResponse = await this.scheduleRequest(
+          VORTEX_API +
+            "/api/post?" +
+            buildQueryString({
+              postSlug: mangaId,
+              includeChapters: 1
+            })
+        );
+        var apiPayload = parseJsonData(apiResponse.data);
+
+        if (apiPayload && apiPayload.post && apiPayload.post.slug) {
+          if ((!Array.isArray(apiPayload.post.chapters) || !apiPayload.post.chapters.length) && apiPayload.post.id) {
+            var chapterPayload = await this.fetchChaptersByPostId(apiPayload.post.id);
+            apiPayload.post.chapters = chapterPayload.chapters;
+          }
+
+          var apiResult = {
+            post: apiPayload.post,
+            chapters: Array.isArray(apiPayload.post.chapters) ? apiPayload.post.chapters : [],
+            totalChapterCount: toNumber(apiPayload.totalChapterCount)
+          };
+          this.seriesCache[mangaId] = apiResult;
+          return apiResult;
+        }
+      } catch (error) {}
+
       var response = await this.scheduleRequest(VORTEX_BASE + "/series/" + mangaId);
       var payload = extractSeriesPageData(String(response.data || ""), mangaId);
 
@@ -698,6 +758,22 @@ var _Sources = (() => {
 
       this.seriesCache[mangaId] = payload;
       return payload;
+    }
+
+    async fetchChaptersByPostId(postId) {
+      var response = await this.scheduleRequest(
+        VORTEX_API +
+          "/api/chapters?" +
+          buildQueryString({
+            postId: postId
+          })
+      );
+      var payload = parseJsonData(response.data);
+      return {
+        chapters: payload && payload.post && Array.isArray(payload.post.chapters)
+          ? payload.post.chapters
+          : []
+      };
     }
 
     async scheduleRequest(url) {
